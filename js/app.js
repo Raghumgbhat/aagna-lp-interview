@@ -46,68 +46,6 @@ function duration(s, e) {
   return m < 60 ? m + ' min' : Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
 }
 
-// ── IndexedDB ──────────────────────────────────────────────────────────────
-let db = null;
-
-function initDB() {
-  const r = indexedDB.open('LPInterviewAagna', 1);
-  r.onupgradeneeded = e => {
-    const d = e.target.result;
-    if (!d.objectStoreNames.contains('sessions'))
-      d.createObjectStore('sessions', { keyPath: 'id' });
-    if (!d.objectStoreNames.contains('answers')) {
-      const a = d.createObjectStore('answers', { keyPath: 'id', autoIncrement: true });
-      a.createIndex('sid', 'sessionId');
-    }
-  };
-  r.onsuccess = e => { db = e.target.result; };
-  r.onerror   = () => console.error('IndexedDB failed to open');
-}
-
-function dbPut(store, obj) {
-  if (!db) return;
-  db.transaction(store, 'readwrite').objectStore(store).put(obj);
-}
-
-function dbGetAll(store, cb) {
-  if (!db) { cb([]); return; }
-  const r = db.transaction(store, 'readonly').objectStore(store).getAll();
-  r.onsuccess = e => cb(e.target.result || []);
-}
-
-function dbGetByIdx(store, indexName, val, cb) {
-  if (!db) { cb([]); return; }
-  const r = db.transaction(store, 'readonly')
-    .objectStore(store)
-    .index(indexName)
-    .getAll(IDBKeyRange.only(val));
-  r.onsuccess = e => cb(e.target.result || []);
-}
-
-function dbClear(store) {
-  if (!db) return;
-  db.transaction(store, 'readwrite').objectStore(store).clear();
-}
-
-function saveAns(ans) {
-  if (!db) return;
-  const tx  = db.transaction('answers', 'readwrite');
-  const idx = tx.objectStore('answers').index('sid');
-  const r   = idx.openCursor(IDBKeyRange.only(ans.sessionId));
-  r.onsuccess = e => {
-    const cursor = e.target.result;
-    if (!cursor) {
-      tx.objectStore('answers').add(ans);
-      return;
-    }
-    if (cursor.value.questionIndex === ans.questionIndex) {
-      cursor.update({ ...cursor.value, ...ans });
-    } else {
-      cursor.continue();
-    }
-  };
-}
-
 // ── Panelists ──────────────────────────────────────────────────────────────
 function renderPanelists() {
   document.getElementById('panel-count').textContent = `${panelists.length} member${panelists.length !== 1 ? 's' : ''}`;
