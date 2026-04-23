@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AAGNA · LP Interview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 18 18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+        <path d="M2 5h14M2 9h9M2 13h11"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-name">AAGNA</div>
+      <div class="logo-sub">LP Interview · Behavioural Assessment</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab" onclick="showPg('setup')">Question Bank</button>
+    <button class="tab on" onclick="showPg('interview')">Interview</button>
+    <button class="tab" onclick="showPg('records');renderRecs()">Records</button>
+  </div>
+  <div class="dbs"><div class="dbd"></div><span>local db</span></div>
+</div>
+
+<!-- QUESTION BANK -->
+<div class="pg" id="pg-setup">
+  <div class="setup-layout">
+    <div class="cat-sidebar">
+      <div class="card cat-list-card">
+        <div class="card-hdr">
+          <div class="card-title">Categories</div>
+          <div class="card-sub" id="cat-total"></div>
+        </div>
+        <div class="cat-scroll" id="cat-list"></div>
+        <div class="new-cat-form">
+          <div class="sec-lbl">New Category</div>
+          <input type="text" id="new-cat-inp" placeholder="Category name…" onkeydown="if(event.key==='Enter')addCat()"/>
+          <button class="btn btn-p btn-s" style="width:100%;margin-top:8px" onclick="addCat()">Create Category</button>
+        </div>
+      </div>
+      <div class="card panelist-card">
+        <div class="card-hdr">
+          <div class="card-title">Interview Panel</div>
+          <div class="card-sub" id="panel-count"></div>
+        </div>
+        <div class="p-scroll" id="panelist-list"></div>
+        <div class="p-add-row">
+          <input type="text" id="new-panel-inp" placeholder="Interviewer name…" onkeydown="if(event.key==='Enter')addPanelist()"/>
+          <button class="btn btn-p btn-xs" onclick="addPanelist()">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card q-editor-card">
+      <div class="no-cat" id="no-cat-msg">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#B0BDD4" stroke-width="1.5" stroke-linecap="round">
+          <path d="M4 6h16M4 11h10M4 16h12"/>
+        </svg>
+        <div style="font-weight:600;color:#2E4070;font-size:13px">Select a category</div>
+        <div style="color:#6B7FA0;font-size:12px">to view and manage its questions</div>
+      </div>
+      <div class="q-ed-inner" id="q-editor-inner">
+        <div class="card-hdr">
+          <div>
+            <div class="card-title" id="qe-title"></div>
+            <div class="card-sub" id="qe-sub"></div>
+          </div>
+          <button class="btn btn-r btn-xs" onclick="deleteCurCat()">Delete Category</button>
+        </div>
+        <div class="qe-body" id="qe-body"></div>
+        <div class="add-q-area">
+          <div class="sec-lbl">Add Question</div>
+          <textarea id="new-q-inp" placeholder="Type question… (Enter to add · Shift+Enter for line break)" rows="3"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addQuestion()}"></textarea>
+          <div class="sec-lbl" style="margin-top:10px">Answer Expectations <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--hint)">(optional — pre-fills model answer for this question)</span></div>
+          <textarea id="new-q-exp" placeholder="What to look for in a strong answer… key themes, signals, red flags" rows="3"></textarea>
+          <div class="add-q-btns">
+            <button class="btn btn-acc btn-s" onclick="addQuestion()">Add Question</button>
+            <span class="hint-txt">Enter to add · Shift+Enter for line break</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INTERVIEW -->
+<div class="pg on" id="pg-interview">
+  <div class="iv-bar">
+    <div class="iv-bar-label">Session Details</div>
+    <div class="iv-grid">
+      <div class="iv-field">
+        <label>Candidate Name</label>
+        <input type="text" id="cand-name" placeholder="e.g. Priya Sharma"/>
+      </div>
+      <div class="iv-field">
+        <label>Interviewer</label>
+        <select id="interviewer-sel"><option value="">— Select —</option></select>
+      </div>
+      <div class="iv-field">
+        <label>Category</label>
+        <select id="cat-sel" onchange="onCatChange()"></select>
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <div class="q-badge" id="q-count-badge">0 questions</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="iv-wrap">
+    <div class="sidebar">
+      <div class="card prog-card">
+        <div class="prog-label">Progress</div>
+        <div class="prog-nums" id="prog-frac">0 <em>/ 0</em></div>
+        <div class="pbar-wrap"><div class="pbar" id="pbar" style="width:0%"></div></div>
+        <div class="pbar-pct" id="prog-pct">0% answered</div>
+      </div>
+      <div class="card q-list-card">
+        <div class="card-hdr" style="padding:10px 14px">
+          <div class="card-title" style="font-size:11px">Questions</div>
+          <div class="card-sub" id="prog-lp"></div>
+        </div>
+        <div class="q-list" id="q-list"></div>
+      </div>
+      <button class="btn btn-r btn-s" onclick="endSession()" style="width:100%">End &amp; Save Session</button>
+    </div>
+
+    <div class="main-panel">
+      <div class="card q-card">
+        <div class="q-hdr">
+          <div class="q-meta">
+            <span class="lp-pill" id="q-lp">—</span>
+            <div class="q-counter" id="q-num">—</div>
+          </div>
+          <div class="q-nav">
+            <button class="btn btn-ghost btn-s" onclick="prevQ()">← Prev</button>
+            <button class="btn btn-p btn-s" onclick="nextQ()">Next →</button>
+          </div>
+        </div>
+        <div class="q-txt" id="q-txt" style="color:#6B7FA0">Select a category above to begin.</div>
+      </div>
+
+      <div class="ans-row">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="ph-lbl"><div class="ph-dot" style="background:#4D35A8"></div>Model Answer</div>
+            <span class="ph-hint">STAR hints</span>
+          </div>
+          <div class="panel-bd">
+            <textarea class="ata" id="model-ans" placeholder="Ideal answer points, STAR keywords, themes to listen for…"></textarea>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr">
+            <div class="ph-lbl"><div class="ph-dot" style="background:#0D7A55"></div>Candidate Answer</div>
+            <span id="rec-ind" class="ph-hint">voice → text</span>
+          </div>
+          <div class="panel-bd">
+            <textarea class="ata" id="cand-ans" placeholder="Candidate's answer — type or use voice capture…" style="min-height:155px"></textarea>
+            <div class="rec-row">
+              <button class="rec-btn" id="rec-btn" onclick="toggleRec()">
+                <div class="rdot"></div><span id="rec-lbl">Start Recording</span>
+              </button>
+              <button class="btn btn-ghost btn-xs" onclick="document.getElementById('cand-ans').value=''">Clear</button>
+              <span class="rec-hint" id="rec-hint">Chrome / Edge only</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr">
+          <div class="ph-lbl"><div class="ph-dot" style="background:#965C00"></div>Interviewer Notes &amp; Assessment</div>
+        </div>
+        <div class="notes-bd">
+          <textarea id="iv-notes" placeholder="Observations, follow-up questions, overall impression…"></textarea>
+          <div class="r-col">
+            <div class="r-lbl">Rating</div>
+            <button class="r-opt" data-v="Strong Yes" onclick="setRating(this)">Strong Yes</button>
+            <button class="r-opt" data-v="Yes" onclick="setRating(this)">Yes</button>
+            <button class="r-opt" data-v="Borderline" onclick="setRating(this)">Borderline</button>
+            <button class="r-opt" data-v="No" onclick="setRating(this)">No</button>
+            <button class="r-opt" data-v="Strong No" onclick="setRating(this)">Strong No</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="act-bar">
+        <button class="btn btn-ghost btn-s" onclick="saveQ()">Save Answer</button>
+        <button class="btn btn-acc btn-s" onclick="nextQ()">Save &amp; Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECORDS -->
+<div class="pg" id="pg-records">
+  <div class="rec-top">
+    <h2>Interview Records</h2>
+    <div style="display:flex;gap:8px">
+      <input class="srch" type="text" id="srch" placeholder="Search candidate, category…" oninput="renderRecs()"/>
+      <button class="btn btn-r btn-s" onclick="clearAllRecs()">Clear All</button>
+    </div>
+  </div>
+  <div id="recs-list"></div>
+</div>
+
+<!-- Hidden PDF render target -->
+<div id="pdf-content"></div>
+<div class="toast" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="js/db.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
